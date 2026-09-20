@@ -19,14 +19,14 @@ medalhão (Bronze, Silver, Gold) e modelagem em esquema estrela.
 | Etapa | Notebook |
 |---|---|
 | Coleta | [`coleta_anp_glp.py`](coleta_anp_glp.py) |
-| Bronze | [`notebooks/00_ingestao_bronze.py`](notebooks/00_ingestao_bronze.py) |
-| Silver | [`notebooks/01_bronze_para_silver.py`](notebooks/01_bronze_para_silver.py) |
-| Gold — dimensões | [`notebooks/02_gold_dimensoes.py`](notebooks/02_gold_dimensoes.py) |
-| Gold — fato | [`notebooks/03_gold_fato.py`](notebooks/03_gold_fato.py) |
-| Qualidade | [`notebooks/04_qualidade_dados.py`](notebooks/04_qualidade_dados.py) |
-| Gold — agregados | [`notebooks/05_gold_agregados.py`](notebooks/05_gold_agregados.py) |
-| Análise | [`notebooks/06_analise_perguntas.py`](notebooks/06_analise_perguntas.py) |
-| Exportação | [`notebooks/07_exportar_resultados.py`](notebooks/07_exportar_resultados.py) |
+| Bronze | [`00_ingestao_bronze.py`](notebooks/00_ingestao_bronze.py) |
+| Silver | [`01_bronze_para_silver.py`](notebooks/01_bronze_para_silver.py) |
+| Gold — dimensões | [`02_gold_dimensoes.py`](notebooks/02_gold_dimensoes.py) |
+| Gold — fato | [`03_gold_fato.py`](notebooks/03_gold_fato.py) |
+| Qualidade | [`04_qualidade_dados.py`](notebooks/04_qualidade_dados.py) |
+| Gold — agregados | [`05_gold_agregados.py`](notebooks/05_gold_agregados.py) |
+| Análise | [`06_analise_perguntas.py`](notebooks/06_analise_perguntas.py) |
+| Exportação | [`07_exportar_resultados.py`](notebooks/07_exportar_resultados.py) |
 
 ## Sumário
 
@@ -164,7 +164,7 @@ data. Não há chave primária declarada; a chave de negócio é
 `CNPJ + Data da Coleta + Produto`, cuja unicidade foi verificada.
 
 O dicionário oficial de metadados da ANP está preservado no repositório em
-[`docs/metadados_anp.pdf`](docs/metadados_anp.pdf) e foi a fonte primária para a
+[`metadados_anp.pdf`](docs/metadados_anp.pdf) e foi a fonte primária para a
 construção do catálogo de dados.
 
 ## Licença de uso
@@ -213,7 +213,7 @@ O hash  é o que permite a qualquer pessoa executar o script
 meses depois e provar que obteve exatamente os mesmos bytes. Cumpre, para a
 coleta, o mesmo papel que a fixação de *seeds* cumpre para um experimento
 reprodutível. O manifesto completo está em
-[`docs/MANIFEST.md`](docs/MANIFEST.md).
+[`MANIFEST.md`](docs/MANIFEST.md).
 
 
 ## Ingestão na nuvem
