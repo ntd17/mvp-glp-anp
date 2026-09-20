@@ -6,7 +6,7 @@ medalhão (Bronze, Silver, Gold) e modelagem em esquema estrela.
 
 **Autor:** João Victor de Assis Natividade
 
-**Matrícula**: 4052025002212
+**Matrícula:** 4052025002212
 
 **Disciplina:** Engenharia de Dados — MVP
 
@@ -14,7 +14,7 @@ medalhão (Bronze, Silver, Gold) e modelagem em esquema estrela.
 
 **Período analisado:** julho de 2024 a agosto de 2026 (26 meses)
 
-**Volume:** 271.945 registros, 5.073 revendas, 421 municípios, 27 UFs
+**Volume:** 271.945 registros, 5.073 revendas, 421 municípios (422 pares município–UF), 27 UFs
 
 | Etapa | Notebook |
 |---|---|
@@ -42,13 +42,12 @@ medalhão (Bronze, Silver, Gold) e modelagem em esquema estrela.
 
 O botijão de 13 kg é um produto fisicamente idêntico em todo o Brasil, mas seu
 preço não é. Este trabalho separa a dispersão em duas escalas com consequências
-opostas para a família: o ruído acionável, BRL 7,86
-na mediana entre
-revendas da mesma cidade na mesma semana e o ruído estrutural, de R$ 44,63 entre Recife e Boa Vista,
-que nenhuma decisão do consumidor alcança. A hierarquia regional não se alterou em 26 meses, e o
-Norte sequer acompanha o movimento nacional de preços. Em 14 das 25 capitais
-analisadas, um botijão custa mais que a linha mensal de extrema pobreza por
-pessoa.
+opostas para a família: o **ruído acionável**, de R$ 7,86 na mediana entre
+revendas da mesma cidade na mesma semana, e o **ruído estrutural**, de R$ 44,63
+entre Recife e Boa Vista, que nenhuma decisão do consumidor alcança. A hierarquia
+regional não se alterou em 26 meses, e o Norte sequer acompanha o movimento
+nacional de preços. Em 14 das 25 capitais analisadas, um botijão custa mais que a
+linha mensal de extrema pobreza por pessoa.
 
 A discussão completa está em
 [Análise de Dados](#análise-de-dados-etapa-45); as limitações do que os dados
@@ -63,14 +62,14 @@ permitem afirmar, ao final daquela seção e na
 
 O Brasil não possui malha significativa de gás natural canalizado para uso
 residencial. Na prática, o **GLP envasilhado é a principal fonte energética de
-cocção doméstica no país** e o botijão de 13 kg (P13) é, por definição, o
+cocção doméstica no país**, e o botijão de 13 kg (P13) é, por definição, o
 formato residencial, distinto do P45 usado em aplicação comercial. Analisar o
 preço do P13 é, portanto, analisar diretamente uma despesa recorrente de quase
 todo domicílio brasileiro.
 
 Isso muda a natureza da pergunta. A dispersão de preço de um produto homogêneo
 não é curiosidade estatística: é orçamento doméstico. Um botijão é fisicamente
-idêntico em Recife e em Boa Vista mesmo gás, mesmo peso, mesma norma. Toda
+idêntico em Recife e em Boa Vista — mesmo gás, mesmo peso, mesma norma. Toda
 variação de preço observada vem de geografia, estrutura de distribuição,
 concorrência local ou tempo. Nenhuma vem do produto.
 
@@ -185,7 +184,6 @@ fonte**. Este trabalho atribui a autoria dos dados à ANP em todas as camadas: n
 catálogo do Unity Catalog, nos comentários de tabela, na coluna de controle
 `_fonte` da camada Bronze e neste documento.
 
-
 ---
 
 # Carga dos Dados (Etapa 4.2)
@@ -209,12 +207,10 @@ reporta qualquer divergência de esquema.
 python coleta_anp_glp.py --out dados_brutos
 ```
 
-O hash  é o que permite a qualquer pessoa executar o script
-meses depois e provar que obteve exatamente os mesmos bytes. Cumpre, para a
-coleta, o mesmo papel que a fixação de *seeds* cumpre para um experimento
-reprodutível. O manifesto completo está em
-[`MANIFEST.md`](docs/MANIFEST.md).
-
+O hash é o que permite a qualquer pessoa executar o script meses depois e provar
+que obteve exatamente os mesmos bytes. Cumpre, para a coleta, o mesmo papel que a
+fixação de *seeds* cumpre para um experimento reprodutível. O manifesto completo
+está em [`MANIFEST.md`](docs/MANIFEST.md).
 
 ## Ingestão na nuvem
 
@@ -233,7 +229,7 @@ ANP:
 Notebook: [`00_ingestao_bronze.py`](notebooks/00_ingestao_bronze.py)
 
 A leitura é feita sobre a pasta inteira do Volume, em uma única operação, com
-schema explícito declarado todas as 16 colunas como `string`. Três decisões:
+schema explícito que declara todas as 16 colunas como `string`. Três decisões:
 
 **Schema explícito, sem `inferSchema`.** A inferência exigiria uma passada extra
 sobre os arquivos e interpretaria mal o preço com vírgula decimal. Mais
@@ -241,7 +237,7 @@ importante: com schema fixo, uma mudança de layout na origem **falha de forma
 visível** em vez de ser silenciosamente reinterpretada.
 
 **Aplicação posicional do schema.** Com `header=True` e schema declarado, o Spark
-descarta a linha de cabeçalho e mapeia por posição o que torna a leitura imune
+descarta a linha de cabeçalho e mapeia por posição, o que torna a leitura imune
 ao BOM do UTF-8, que de outro modo se anexa ao nome da primeira coluna. Como isso
 cria dependência da ordem das colunas, o notebook **valida os seis cabeçalhos
 antes de qualquer leitura** e lança exceção se houver divergência.
@@ -291,8 +287,8 @@ workspace
 
 A camada Silver é uma tabela ampla: cada linha repete o endereço da revenda, o
 nome do município e a bandeira. Isso é adequado para limpeza, mas ruim para
-análise pois os dados cadastrais de uma revenda chegam a se repetir em centenas de
-linhas.
+análise, pois os dados cadastrais de uma revenda chegam a se repetir em centenas
+de linhas.
 
 O esquema estrela separa **o que foi medido** (o preço, no fato) de **o contexto
 da medição** (quando, onde, por quem, sob qual marca). Três ganhos concretos
@@ -300,8 +296,8 @@ neste trabalho:
 
 1. Consultas analíticas ficam diretas, sem subconsultas para recuperar contexto.
 2. Elimina-se redundância nas descrições.
-3. Atributos derivados que exigem cálculo como `flag_painel_capitais`, que
-   depende de contar meses de cobertura são calculados uma vez, na dimensão, e
+3. Atributos derivados que exigem cálculo — como `flag_painel_capitais`, que
+   depende de contar meses de cobertura — são calculados uma vez, na dimensão, e
    reutilizados por todas as análises.
 
 ```
@@ -329,21 +325,23 @@ para proteger quem venha a consumir o modelo depois.
 ### Chaves
 
 Cada dimensão recebe uma **chave substituta** (`sk_`) gerada por `row_number`
-sobre ordenação determinística, rodar o pipeline duas vezes produz as mesmas
+sobre ordenação determinística: rodar o pipeline duas vezes produz as mesmas
 chaves, o que não aconteceria com `monotonically_increasing_id`.
 
-A `dim_localidade` usa **chave natural composta** `(municipio, uf_sigla)`. VALENÇA existe tanto na Bahia quanto no Rio de Janeiro daí a chave natural composta.
-São 421 nomes distintos de município mapeiam para 422 localidades.
+A `dim_localidade` usa **chave natural composta** `(municipio, uf_sigla)`. VALENÇA
+existe tanto na Bahia quanto no Rio de Janeiro — daí a necessidade da chave
+composta. Os 421 nomes distintos de município mapeiam para 422 localidades.
 
 A `dim_revenda` é de **tipo 1**: atributos cadastrais refletem a última ocorrência
-observada, sem versionamento histórico. Decisão consciente o trabalho analisa
-preço, não a evolução cadastral das revendas. Uma dimensão tipo 2 seria o
-caminho caso o interesse passasse a ser o histórico de mudanças de bandeira.
+observada, sem versionamento histórico. É uma decisão consciente, porque o
+trabalho analisa preço, não a evolução cadastral das revendas. Uma dimensão tipo
+2 seria o caminho caso o interesse passasse a ser o histórico de mudanças de
+bandeira.
 
 A `dim_tempo` contém **apenas as datas observadas**, não um calendário completo.
 A pesquisa da ANP é semanal; um calendário de 2024-07-01 a 2026-08-31 teria 792
 linhas, das quais cerca de 27% nunca se ligariam a fato algum. Dias sem pesquisa
-não são informação ausente são dias em que a pesquisa não ocorre.
+não são informação ausente: são dias em que a pesquisa não ocorre.
 
 ![Validação das dimensões e unicidade das chaves](docs/img/05_gold_dimensoes_validacao.png)
 
@@ -351,7 +349,7 @@ não são informação ausente são dias em que a pesquisa não ocorre.
 
 O catálogo está implementado no **Unity Catalog**, via `COMMENT ON TABLE` e
 `ALTER TABLE ... ALTER COLUMN ... COMMENT`, e transcrito integralmente abaixo. A
-documentação vive no sistema, não apenas neste documento quem abrir a tabela no
+documentação vive no sistema, não apenas neste documento: quem abrir a tabela no
 Catalog Explorer no futuro verá a mesma descrição.
 
 ### Evidência do sistema de catálogo
@@ -371,10 +369,9 @@ notebooks, em nível de coluna:
 
 ![Linhagem em nível de coluna: Silver alimentando o fato](docs/img/09_lineage_silver_fato.png)
 
-A linhagem é registrada de três formas complementares: neste diagrama, na coluna
-de controle `_arquivo_origem` que rastreia cada registro até o arquivo
-publicado pela ANP e nos comentários de tabela, que declaram a origem de cada
-camada.
+A linhagem é registrada de três formas complementares: neste diagrama; na coluna
+de controle `_arquivo_origem`, que rastreia cada registro até o arquivo publicado
+pela ANP; e nos comentários de tabela, que declaram a origem de cada camada.
 
 ---
 
@@ -400,7 +397,7 @@ direta dos seis CSV do Volume `raw_anp`, sem transformação de valores.
 | `produto` | string | Combustível. Valor único: `GLP` |
 | `data_coleta` | string | Data no formato `dd/MM/yyyy`. 577 datas distintas |
 | `valor_venda` | string | Preço ao consumidor, vírgula decimal. Faixa: `70,00` a `170,00` |
-| `valor_compra` | string | Preço de distribuição. Nulo em 100% |
+| `valor_compra` | string | Preço de distribuição. Nulo em 100% dos registros |
 | `unidade_medida` | string | Unidade. Valor único: `R$ / 13 kg` |
 | `bandeira` | string | Marca comercial exibida, ou `BRANCA`. 14 valores |
 | `_arquivo_origem` | string | Controle: arquivo CSV de origem da linha |
@@ -431,7 +428,7 @@ problemas são sinalizados por `flag_rejeitado`. **Grão:** idêntico ao Bronze.
 | `produto` | string | `trim` + `upper`. Valor único: `GLP` |
 | `data_coleta` | date | `to_date(..., 'dd/MM/yyyy')`. Faixa: 2024-07-01 a 2026-08-31 |
 | `valor_venda` | decimal(10,2) | Vírgula → ponto, cast. Faixa: 70,00 a 170,00. Média: 110,93 |
-| `valor_compra` | decimal(10,2) | Nulo em registros |
+| `valor_compra` | decimal(10,2) | Nulo em 100% dos registros |
 | `unidade_medida` | string | `trim` + `upper`. Valor único: `R$ / 13 KG` |
 | `bandeira` | string | `trim` + `upper`. 14 valores; maior é `BRANCA` (63.849 coletas) |
 | `ano` | int | Derivado de `data_coleta`. Domínio: 2024, 2025, 2026 |
@@ -502,11 +499,11 @@ cobertura. **422 linhas, 10 colunas.**
 | `uf_sigla` | string | Parte da chave natural. 27 valores |
 | `regiao_sigla` | string | `N`, `NE`, `CO`, `SE`, `S` |
 | `regiao_nome` | string | Norte, Nordeste, Centro-Oeste, Sudeste, Sul |
-| `qtd_revendas_pesquisadas` | long | Revendas distintas no município. **Proxy de concorrência local.** 1 a 198 |
+| `qtd_revendas_pesquisadas` | long | Revendas distintas **pesquisadas pela ANP** no município. Proxy imperfeito de concorrência local — ver ressalva na pergunta 4. 1 a 198 |
 | `qtd_coletas` | long | Total de coletas no município na série |
-| `meses_com_coleta` | long | Meses dos 26 em que houve coleta. **1 a 26** a abrangência da pesquisa mudou |
+| `meses_com_coleta` | long | Meses dos 26 em que houve coleta. **1 a 26**, porque a abrangência da pesquisa mudou |
 | `flag_capital` | boolean | Verdadeiro para capital de UF. 27 verdadeiros |
-| `flag_painel_capitais` | boolean | Capital com cobertura nos 26 meses. **25 verdadeiros** critério objetivo do painel balanceado |
+| `flag_painel_capitais` | boolean | Capital com cobertura nos 26 meses. **25 verdadeiros** — critério objetivo do painel balanceado |
 
 ---
 
@@ -594,7 +591,7 @@ fato restrita a `flag_painel_capitais`. **650 linhas** (25 capitais × 26 meses)
 ### `workspace.gold.agg_indice_p13_nacional`
 
 Índice de preço do botijão P13, base julho/2024 = 100. Calculado em **dois
-passos**  média por capital, depois média entre capitais com peso igual sobre
+passos**: média por capital, depois média entre capitais com peso igual sobre
 o painel balanceado. Índice não oficial, construído por este MVP, inspirado na
 metodologia de cesto fixo dos índices de preço tradicionais.
 **Linhagem:** derivado de `agg_preco_capital_mes`. **26 linhas, 9 colunas.**
@@ -630,9 +627,9 @@ Mede a dispersão entre revendas da mesma cidade na mesma semana.
 | `desvio_padrao` | decimal | Desvio-padrão do grupo |
 | `preco_min` | decimal | Menor preço do grupo |
 | `preco_max` | decimal | Maior preço do grupo |
-| `coef_variacao_pct` | double | Desvio / média. Mediana 5,1%, p90 9,2% |
-| `spread_pct` | double | (max/min − 1). Mediana 16,2%, p90 33,3% |
-| `economia_rs` | decimal | Média − mínimo. **Quanto se economiza comprando no mais barato.** Mediana R$ 7,86 |
+| `coef_variacao_pct` | double | Desvio / média. Mediana 5,1%, p90 9,2%. **Métrica de dispersão sem viés de tamanho de amostra** |
+| `spread_pct` | double | (max/min − 1). Mediana 16,2%, p90 33,3%. Cresce com o número de coletas do grupo |
+| `economia_rs` | decimal | Média − mínimo. **Quanto se economiza comprando no mais barato.** Mediana R$ 7,86. Também cresce com o número de coletas |
 
 ---
 
@@ -669,7 +666,7 @@ saída e um conjunto próprio de validações.
 | `06_analise_perguntas` | Gold | (nada) | Responder as perguntas de negócio |
 | `07_exportar_resultados` | Gold | Volume `exports` | Consolidar resultados para documentação |
 
-A ramificação tem três vantagens práticas. Falhas ficam localizadas se a
+A ramificação tem três vantagens práticas. Falhas ficam localizadas: se a
 validação da Silver acusa divergência, não é necessário reexecutar a ingestão.
 Cada notebook pode ser reexecutado isoladamente, já que todos são idempotentes
 (`mode("overwrite")`). E a leitura do repositório fica compreensível para quem
@@ -712,7 +709,7 @@ silver.preco_glp_coleta           │
 
 **Normalização do CNPJ (Silver).** `regexp_replace` para dígitos + `lpad` a 14
 posições. Corrige a divergência de formato entre arquivos de origem. Sem esta
-transformação a `dim_revenda` teria 8.844 linhas em vez de 5.073 e inflação de
+transformação a `dim_revenda` teria 8.844 linhas em vez de 5.073, uma inflação de
 74% na contagem de estabelecimentos.
 
 **Padronização de texto (Silver).** `trim` + `upper` em todos os campos
@@ -729,13 +726,14 @@ quebrados; o `inner` faz a linha desaparecer, e a checagem de contagem detecta o
 sumiço imediatamente. Prefere-se falhar alto a seguir em silêncio.
 
 **Painel balanceado (Gold).** `flag_painel_capitais` marca as capitais presentes
-nos 26 meses  (25 das 27 qualificam). É a resposta modelada ao problema de
+nos 26 meses (25 das 27 qualificam). É a resposta modelada ao problema de
 cobertura amostral variável descrito na seção de Qualidade.
 
 **Índice em dois passos (Gold).** Média por capital, depois média entre capitais.
 Uma média direta sobre o fato daria a Manaus (7.547 coletas) peso doze vezes
-maior que a Florianópolis (609). Ponderando pela intensidade da pesquisa, que é
-exatamente a variável instável que o painel existe para neutralizar.
+maior que a Florianópolis (609). Isso equivaleria a ponderar pela intensidade da
+pesquisa, que é exatamente a variável instável que o painel existe para
+neutralizar.
 
 ## Validação automatizada
 
@@ -759,9 +757,8 @@ exceção e interrompe a execução.
 
 A validação do fato merece destaque por incluir uma **soma de controle**: o total
 de `valor_venda` antes e depois das junções deve ser idêntico. Contagem igual não
-garante linhas iguais poderia ter perdido uma e duplicado outra. A soma fecha
-essa brecha. Resultado: R$ 30.167.716,86 nos dois lados.
-
+garante linhas iguais — o pipeline poderia ter perdido uma e duplicado outra. A
+soma fecha essa brecha. Resultado: R$ 30.167.716,86 nos dois lados.
 
 ![Esquema estrela em funcionamento](docs/img/07_estrela_funcionando.png)
 
@@ -775,7 +772,7 @@ Todas as tabelas são Delta, persistidas no Unity Catalog:
 
 Os notebooks foram exportados do Databricks em formato *source* e versionados
 neste repositório. A plataforma oferece integração direta via Databricks Repos,
-não utilizada aqui por exigir configuração de token de acesso e a exportação
+não utilizada aqui por exigir configuração de token de acesso; a exportação
 manual atende ao requisito com menos superfície de configuração.
 
 ---
@@ -822,8 +819,8 @@ distintas conforme o semestre em que foi pesquisado:
 | Entidades duplicadas eliminadas | 3.771 (**42,6%**) |
 
 Sem correção, a dimensão de revendas teria 74% mais linhas do que revendas reais,
-e toda métrica derivada de contagem de estabelecimentos inclusive o indicador
-de concorrência local usado na pergunta 4 ficaria inflada especificamente no
+e toda métrica derivada de contagem de estabelecimentos — inclusive o indicador
+de concorrência local usado na pergunta 4 — ficaria inflada especificamente no
 2º semestre de 2025.
 
 **Tratamento.** Na Silver, o campo é reduzido a dígitos e preenchido à esquerda
@@ -836,7 +833,7 @@ F.lpad(F.regexp_replace(F.col("cnpj_revenda"), r"\D", ""), 14, "0")
 ## 2. Espaços nas bordas de campos de texto
 
 **Detecção.** Cinco campos: `CNPJ da Revenda` (218.522 linhas, 80,4%),
-`Nome da Rua` (699), `Revenda` (64), `Complemento` (251) e `Bairro` (22).
+`Nome da Rua` (699), `Complemento` (251), `Revenda` (64) e `Bairro` (22).
 
 **Impacto.** Em agrupamentos por texto, `' XEREM'` e `'XEREM'` são chaves
 diferentes, fragmentando agregações por bairro e por nome de revenda.
@@ -848,7 +845,7 @@ Silver, padronizando também a caixa.
 
 **Detecção.** A coluna existe no layout mas vem vazia em **todos** os 271.945
 registros. Os metadados oficiais da ANP confirmam a causa: o campo corresponde
-ao preço de distribuição e sua *série está disponível apenas até agosto de 2020*.
+ao preço de distribuição e sua série está disponível apenas até agosto de 2020.
 
 **Impacto.** Inviabiliza o cálculo da margem bruta da revenda, objeto da pergunta
 de negócio 7.
@@ -861,7 +858,7 @@ interpretem como falha de carga.
 ## 4. `Complemento` majoritariamente ausente
 
 **Detecção.** 74,1% de nulos (201.513 de 271.945). Além disso, 199 linhas contêm
-apenas caracteres de espaço não nulos para o parser, mas vazios semanticamente.
+apenas caracteres de espaço — não nulos para o parser, mas vazios semanticamente.
 
 **Tratamento.** Após o `trim`, strings vazias são convertidas em nulo, unificando
 as duas representações de ausência.
@@ -878,36 +875,37 @@ lança erro de coluna inexistente.
 **Tratamento.** Schema explícito aplicado por posição, o que torna a leitura
 independente dos nomes no cabeçalho.
 
-
 ## 6. Formatos brasileiros de número e data
 
 **Detecção.** `Valor de Venda` usa vírgula decimal (`"125,00"`) e
 `Data da Coleta` o formato `dd/MM/yyyy`.
 
 **Tratamento.** A Bronze declara todas as colunas como `string`, sem
-`inferSchema`  assim uma mudança de layout na fonte falha de forma visível. A
+`inferSchema` — assim uma mudança de layout na fonte falha de forma visível. A
 conversão ocorre na Silver. Após o cast: 0 preços não numéricos e 0 datas
 inválidas.
 
 ## 7. Cobertura da amostra variável ao longo do tempo
 
-**Detecção.** O número de municípios pesquisados por mês vai de 95 (jul/2024) a
-411 (2026), com colapso intermediário para 94 em ago/2025. A pesquisa da ANP foi
-expandida por fases, com interrupções.
+**Detecção.** O número de municípios pesquisados por mês vai de **94 (ago/2025) a
+411 (abr/2026)**. A série começa pequena — 96 municípios em jul/2024, estável em
+torno de 95 até dez/2024 — expande em duas ondas (jan–jun/2025 e a partir de
+set/2025) e sofre dois colapsos intermediários, em jul/2025 (143) e ago/2025 (94).
+A pesquisa da ANP foi expandida por fases, com interrupções.
 
-**Impacto.** Defeito de comparabilidade, não de conteúdo. A média nacional
+**Impacto.** É um defeito de comparabilidade, não de conteúdo. A média nacional
 simples mistura variação de preço com variação de composição da amostra. O caso
-mais claro é janeiro de 2025: a média bruta **cai** de BRL 108,93 para BRL 107,68
+mais claro é janeiro de 2025: a média bruta **cai** de R$ 108,93 para R$ 107,68
 exatamente quando os municípios saltam de 95 para 164. No painel de capitais o
-mesmo mês fica estável (BRL 109,72 para BRL 109,66). A queda era entrada de
+mesmo mês fica estável (R$ 109,72 para R$ 109,66). A queda era entrada de
 municípios baratos na amostra, não barateamento.
 
 **Tratamento.** Construção, na camada Gold, de um painel balanceado com as
 capitais presentes em todos os 26 meses (25 das 27 qualificaram); Macapá e Palmas
-ficaram de fora com 25 meses cada. Metodologia inspirada nos índices de cesto
-fixo: as sete capitais do componente IPC do IGP-M não
-incluem nenhuma do Norte e reduziriam a amplitude regional medida de 47,7% para
-cerca de 31%.
+ficaram de fora, com 25 meses cada. Metodologia inspirada nos índices de cesto
+fixo. Vale registrar que um cesto mais estreito distorceria o resultado: as sete
+capitais do componente IPC do IGP-M não incluem nenhuma do Norte e reduziriam a
+amplitude regional medida de 47,7% para cerca de 31%.
 
 **Validação.** A variação acumulada de 26 meses é de +11,04% na série bruta e
 +10,50% no painel. A proximidade indica que a tendência de longo prazo é robusta
@@ -915,14 +913,16 @@ cerca de 31%.
 
 ## 8. Outliers de preço
 
-**Detecção.** Pelo critério de Tukey (1,5 × IQR sobre os limites
-[BRL 70,00; BRL 150,00]), 269 registros ficam fora da faixa ou 0,1% da base. Mínimo
-observado BRL 70,00, máximo R$ 170,00.
+**Detecção.** Pelo critério de Tukey, o 1º e o 3º quartis são R$ 100,00 e
+R$ 120,00, o que produz limites de R$ 70,00 e R$ 150,00. Nenhum registro fica
+abaixo do limite inferior e 269 ficam acima do superior — 0,10% da base. Mínimo
+observado R$ 70,00, máximo R$ 170,00.
 
-**Mantido.** Ambos os extremos são preços plausíveis para um botijão de
-13 kg no período, e a amplitude regional confirmada pela análise (Recife
-BRL 93,60; Boa Vista R$ 138,23) mostra que valores altos refletem desafios de geografia. Remover esses registros eliminaria justamente o sinal que o
-trabalho se propõe a medir.
+**Mantidos.** Ambos os extremos são preços plausíveis para um botijão de 13 kg no
+período, e a amplitude regional confirmada pela análise (Recife R$ 93,60; Boa
+Vista R$ 138,23) mostra que os valores altos acompanham a geografia esperada.
+Remover esses registros eliminaria justamente o sinal que o trabalho se propõe a
+medir.
 
 ## Verificações realizadas sem problemas encontrados
 
@@ -987,7 +987,7 @@ de nível entre regiões usam o painel balanceado de 25 capitais.
 ## Pergunta 1 — Diferença de preço entre regiões e UFs
 
 Cada região é representada pela média de suas capitais no painel, não pela média
-das coletas caso contrário Manaus, com 7.547 coletas, dominaria o Norte.
+das coletas — caso contrário Manaus, com 7.547 coletas, dominaria o Norte.
 
 | Região | Capitais | Preço médio | vs. Sudeste |
 |---|---:|---:|---:|
@@ -999,14 +999,14 @@ das coletas caso contrário Manaus, com 7.547 coletas, dominaria o Norte.
 
 ![Preço médio por região](docs/img/14_p1_regioes.png)
 
-Entre capitais, a amplitude é de **47,7%**: Recife a BRL 93,60 e Boa Vista a
-BRL 138,23 — **R$ 44,63 de diferença pelo mesmo botijão de 13 kg**.
+Entre capitais, a amplitude é de **47,7%**: Recife a R$ 93,60 e Boa Vista a
+R$ 138,23 — **R$ 44,63 de diferença pelo mesmo botijão de 13 kg**.
 
 ![Ranking das 25 capitais do painel](docs/img/15_p1_capitais.png)
 
-**A hierarquia é  estável.** Comparando os seis primeiros meses com
-os seis últimos, a ordem entre regiões não muda: correlação de postos de Spearman
-igual a **1**.
+**A hierarquia é estável.** Comparando os seis primeiros meses com os seis
+últimos, a ordem entre regiões não muda: correlação de postos de Spearman igual
+a **1**.
 
 | Região | Primeiros 6 meses | Últimos 6 meses | Variação |
 |---|---:|---:|---------:|
@@ -1020,8 +1020,8 @@ igual a **1**.
 desiguais: o Nordeste subiu quase o dobro do Sudeste e do Norte. Como partia da
 segunda posição mais barata, o movimento comprime a distância para o
 Centro-Oeste sem alterar a ordem. A estabilidade sugere que o gradiente regional
-é determinado por fatores estruturais, distância das centrais de distribuição,
-custo logístico, densidade da malha de revendas e não por oscilações
+é determinado por fatores estruturais — distância das centrais de distribuição,
+custo logístico, densidade da malha de revendas — e não por oscilações
 conjunturais.
 
 Um caso destoa: **Florianópolis (R$ 125,12) é a segunda capital mais cara do
@@ -1031,7 +1031,7 @@ do Centro-Oeste. Os dados disponíveis não explicam a anomalia.
 ## Pergunta 2 — Dispersão dentro da mesma cidade e semana
 
 Este é o ruído acionável. São 24.645 grupos município-semana com ao menos 5
-coletas, abaixo disso o coeficiente de variação é instável demais.
+coletas; abaixo disso o coeficiente de variação é instável demais.
 
 | Métrica | Mediana | P90 |
 |---|---:|---:|
@@ -1045,25 +1045,35 @@ Na cidade mediana, numa semana qualquer, a revenda mais cara cobra 16,2% a mais
 que a mais barata. Comprar na mais barata em vez de pagar a média economiza
 **R$ 7,86**, cerca de 7% do botijão.
 
-| Região | Spread mediano | Economia mediana |
-|---|---:|---:|
-| Centro-Oeste | 20,4% | **R$ 10,00** |
-| Norte | 16,0% | R$ 8,22 |
-| Sudeste | 18,0% | R$ 8,15 |
-| Sul | 14,9% | R$ 7,21 |
-| Nordeste | 13,0% | R$ 6,67 |
+| Região | Spread mediano | Economia mediana | Coef. de variação mediano |
+|---|---:|---:|---:|
+| Centro-Oeste | 20,4% | **R$ 10,00** | 5,8% |
+| Norte | 16,0% | R$ 8,22 | 4,6% |
+| Sudeste | 18,0% | R$ 8,15 | 5,8% |
+| Sul | 14,9% | R$ 7,21 | 4,6% |
+| Nordeste | 13,0% | R$ 6,67 | 4,3% |
 
 ![Dispersão por região](docs/img/17_p2_dispersao_regiao.png)
 
 Nos municípios de maior dispersão o efeito é bem maior: Cianorte (PR) com spread
-médio de 41,4% e BRL 21,50 de economia; Cuiabá, 43,6% e BRL 19,20; São Paulo,
+médio de 41,4% e R$ 21,50 de economia; Cuiabá, 43,6% e R$ 19,20; São Paulo,
 42,7% e R$ 18,64.
+
+**Ressalva metodológica.** `economia_rs` (média − mínimo) e `spread_pct`
+(máximo/mínimo) dependem do tamanho do grupo: quanto mais coletas numa
+semana, maior a chance de o mínimo observado ser baixo. O piso de 5 coletas
+limita o efeito, mas não o elimina. Por isso a tabela acima traz também o
+coeficiente de variação, que não tem esse viés — e as duas métricas discordam
+num caso. O Norte é o 2º em economia mediana, mas apenas o 4º em coeficiente de
+variação; seus grupos têm mediana de 9 coletas contra 7 do Sudeste. Parte da
+dispersão aparente do Norte é intensidade de pesquisa, não preço. Centro-Oeste
+no topo e Nordeste na base, por outro lado, são confirmados pelas duas métricas.
 
 **Discussão.** Comparando com a pergunta 1, o resultado é contraintuitivo:
 pesquisar preço dentro do próprio bairro rende quase um quinto do que separa a
-capital mais cara da mais barata do país  (`R$ 7,86 contra R$ 44,63`). A diferença é
-que a primeira está ao alcance de um `Google` e a segunda não está ao alcance
-de ninguém.
+capital mais cara da mais barata do país (R$ 7,86 contra R$ 44,63). A diferença
+é que a primeira parcela está ao alcance de uma busca na internet e a segunda
+não está ao alcance de ninguém.
 
 ## Pergunta 3 — Bandeira branca é mais barata?
 
@@ -1096,10 +1106,10 @@ Norte e inverte no Nordeste. As duas métricas confirmam o padrão de forma
 independente: nas duas regiões onde a diferença média some, a proporção de pares
 com branca mais barata cai abaixo de 50%.
 
-Uma tese que os dados não permitem confirmar é que a
-bandeira branca desconta onde há distribuidoras concorrendo pela revenda, e perde
-essa vantagem onde a estrutura de distribuição é mais concentrada. Verificar isso
-exigiria dados de participação de mercado por região, fora do escopo desta base.
+Uma tese que os dados não permitem confirmar é que a bandeira branca desconta
+onde há distribuidoras concorrendo pela revenda, e perde essa vantagem onde a
+estrutura de distribuição é mais concentrada. Verificar isso exigiria dados de
+participação de mercado por região, fora do escopo desta base.
 
 Registre-se que **a bandeira branca é a maior categoria isolada do país**: 1.389
 revendas e 63.849 coletas, 23,5% do total, à frente de Supergasbras, Ultragaz e
@@ -1107,8 +1117,9 @@ Nacional Gás.
 
 ## Pergunta 4 — Concorrência local e preço
 
-Analisados os 414 municípios pesquisados em 2026 com ao menos 3 revendas. Correlação de Spearman, sobre postos, porque a relação não
-precisa ser linear para existir.
+Analisados os 414 municípios pesquisados em 2026 com ao menos 3 revendas. A
+correlação é de Spearman, sobre postos, porque a relação não precisa ser linear
+para existir.
 
 **No agregado nacional não há relação: ρ = −0,07.** E as faixas não são
 monotônicas:
@@ -1122,9 +1133,9 @@ monotônicas:
 
 ![Faixas de concorrência](docs/img/20_p4_faixas.png)
 
-A explicação está na composição da faixa superior: municípios com mais de 21
-revendas são quase todos capitais, várias caras por razões logísticas com Manaus
-(79 revendas, BRL 126,97), Boa Vista (25, BRL 141,98), Cuiabá (27, R$ 122,70). A
+A explicação está na composição da faixa superior: municípios com 21 revendas ou
+mais são quase todos capitais, várias delas caras por razões logísticas — Manaus
+(79 revendas, R$ 126,97), Boa Vista (25, R$ 141,98), Cuiabá (27, R$ 122,70). A
 região confunde o agregado.
 
 Controlando por região, a relação aparece em todas elas:
@@ -1143,9 +1154,18 @@ Controlando por região, a relação aparece em todas elas:
 revendas está associado a preço menor; entre regiões, não.** Afirmar simplesmente
 que concorrência reduz preço seria contrariado pela própria tabela de faixas.
 
-O resultado conversa com a pergunta 2  onde há mais revendas há mais para
-comparar. A correlação é fraca em todos os casos e não estabelece causalidade:
+O resultado conversa com a pergunta 2: onde há mais revendas, há mais para
+comparar. A correlação é fraca em todos os casos e não estabelece causalidade —
 municípios maiores diferem de menores em muito mais do que o número de revendas.
+
+**Ressalva sobre o indicador.** `qtd_revendas_pesquisadas` conta as revendas que
+a ANP pesquisou, não as que existem no município. Como a própria cobertura da
+pesquisa variou de 94 a 411 municípios ao longo da série (seção de Qualidade),
+a variável mistura estrutura de mercado com esforço amostral. O recorte de 2026,
+em que a cobertura já está estabilizada em torno de 410 municípios, reduz o
+problema, mas não o elimina. Os coeficientes por região, além disso, são
+descritivos: com 29 municípios no Centro-Oeste e 30 no Norte, não comportam
+leitura de significância estatística.
 
 ## Pergunta 5 — Evolução temporal e quebras de nível
 
@@ -1163,11 +1183,11 @@ municípios maiores diferem de menores em muito mais do que o número de revenda
 
 **Discussão.** A série tem três movimentos. Sobe de julho a dezembro de 2024
 (+4,5%), fica praticamente estável por quinze meses (+2,7% de dezembro/2024 a
-março/2026), e dá um salto concentrado em abril e maio de 2026 (+3,8% em dois
+março/2026) e dá um salto concentrado em abril e maio de 2026 (+3,8% em dois
 meses). Os últimos três meses mostram leve queda.
 
 O salto de abril de 2026 é a quebra de nível mais clara. Aparece tanto na série
-bruta quanto no painel balanceado, o que descarta artefato de composição  é
+bruta quanto no painel balanceado, o que descarta artefato de composição: é
 preço, não amostra. Os dados desta base não permitem atribuir causa. Reajuste
 de distribuidora, variação cambial, mudança tributária ou alteração regulatória
 são hipóteses igualmente compatíveis, e testá-las exigiria séries externas.
@@ -1217,7 +1237,7 @@ provavelmente têm a mesma origem.
 
 **Ressalva.** São 25 variações mensais. Os números são descritivos, não
 inferenciais, e não comportam leitura de significância estatística. Testes com
-defasagem de um mês não revelaram padrão — todas as correlações defasadas ficaram
+defasagem de um mês não revelaram padrão: todas as correlações defasadas ficaram
 entre 0,02 e 0,45, sem estrutura.
 
 ## Pergunta 7 — Margem bruta da revenda
@@ -1235,27 +1255,27 @@ publicado pela ANP mas vem vazio em todos os registros do período. Os metadados
 oficiais confirmam: a série de preço de distribuição está disponível apenas **até
 agosto de 2020**.
 
-A verificação é dupla, sendo documental, pelos metadados da fonte, e empírica, pela
+A verificação é dupla: documental, pelos metadados da fonte, e empírica, pela
 contagem acima. A impossibilidade é característica da fonte, não falha do
-pipeline: a coluna foi preservada em todas as camadas, com a descontinuidade
+pipeline. A coluna foi preservada em todas as camadas, com a descontinuidade
 registrada no catálogo, de modo que uma eventual retomada da série seria
 absorvida sem alteração do modelo.
 
 ## Discussão geral
 
 O problema formulado era entender o que explica a dispersão do preço do GLP P13
-no Brasil e qual o impacto dessa dispersão sobre o orçamento doméstico. O P13 é um
-produto homogêneo, de modo que toda variação observada vem de geografia,
+no Brasil e qual o impacto dessa dispersão sobre o orçamento doméstico. O P13 é
+um produto homogêneo, de modo que toda variação observada vem de geografia,
 distribuição, concorrência local ou tempo.
 
 **A dispersão existe em duas escalas, e a distinção entre elas é a principal
 conclusão deste trabalho.**
 
-O **ruído acionável** opera dentro da cidade: BRL 7,86 de mediana entre o preço
-médio e o mais barato da mesma semana, chegando a mais de BRL 20,00 nos municípios
-de maior dispersão. A pergunta 4 sugere um mecanismo  onde há mais revendas, há
-mais de onde escolher  e a pergunta 3 acrescenta que, no Sul e no Sudeste, optar
-pela bandeira branca soma outros BRL 2,00. Essa parcela está ao alcance de quem
+O **ruído acionável** opera dentro da cidade: R$ 7,86 de mediana entre o preço
+médio e o mais barato da mesma semana, chegando a mais de R$ 20,00 nos municípios
+de maior dispersão. A pergunta 4 sugere um mecanismo — onde há mais revendas, há
+mais de onde escolher — e a pergunta 3 acrescenta que, no Sul e no Sudeste, optar
+pela bandeira branca soma outros R$ 2,00. Essa parcela está ao alcance de quem
 pode consultar três revendas antes de comprar.
 
 O **ruído estrutural** opera entre regiões: R$ 44,63 entre Recife e Boa Vista,
@@ -1263,11 +1283,11 @@ uma hierarquia que não se alterou em dois anos e um Norte que sequer acompanha 
 movimento nacional de preços. Nenhuma decisão do consumidor afeta essa parcela.
 Ela é determinada pelo CEP.
 
-Em esforço orçamentário o resultado é concreto: **em 14 das 25 capitais** do painel
-um botijão custa mais que a linha mensal de extrema pobreza por pessoa. Em Boa
-Vista, 26,8% a mais. E a série cruzou esse limiar durante o período analisado. A
-média nacional das capitais passou de 96,3% para 106,4% da linha entre julho de
-2024 e agosto de 2026.
+Em esforço orçamentário o resultado é concreto: **em 14 das 25 capitais** do
+painel um botijão custa mais que a linha mensal de extrema pobreza por pessoa. Em
+Boa Vista, 26,8% a mais. E a série cruzou esse limiar durante o período
+analisado: a média nacional das capitais passou de 96,3% para 106,4% da linha
+entre julho de 2024 e agosto de 2026.
 
 Isso delimita o alcance de políticas de transferência. O Programa Gás do Povo
 (Decreto nº 12.649/2025) oferece gratuidade na recarga para famílias do Cadastro
@@ -1277,10 +1297,11 @@ revenda aderiu, o preço analisado aqui continua sendo o preço cheio.
 
 **O que a análise não permite afirmar.** Não há como atribuir causa ao salto de
 abril de 2026. A relação entre concorrência e preço é fraca, condicional à região
-e não estabelece causalidade. A menor sincronia do Norte é compatível com
-explicação logística mas não a comprova. E a base cobre 421 municípios de cerca
-de 5.570. Todas as conclusões valem para municípios de porte médio para cima, e
-nada se pode dizer sobre o interior pequeno, onde a pesquisa da ANP não chega.
+e não estabelece causalidade, e o indicador de concorrência é um proxy de
+cobertura da pesquisa. A menor sincronia do Norte é compatível com explicação
+logística, mas não a comprova. E a base cobre 421 municípios de cerca de 5.570:
+todas as conclusões valem para municípios de porte médio para cima, e nada se
+pode dizer sobre o interior pequeno, onde a pesquisa da ANP não chega.
 
 ---
 
@@ -1288,13 +1309,13 @@ nada se pode dizer sobre o interior pequeno, onde a pesquisa da ANP não chega.
 
 ## Atingimento dos objetivos
 
-Dos sete objetivos traçados antes do início do trabalho, seis foram atingidos
-integralmente e **um** se mostrou impossível com a fonte escolhida.
+Dos sete objetivos traçados antes do início do trabalho, seis foram atingidos e
+**um** se mostrou impossível com a fonte escolhida.
 
 | # | Pergunta | Situação |
 |---|---|---|
 | 1 | Variação regional e sua estabilidade | Respondida |
-| 2 | Dispersão intramunicipal | Respondida |
+| 2 | Dispersão intramunicipal | Respondida, com ressalva metodológica |
 | 3 | Bandeira branca | Respondida |
 | 4 | Concorrência local | Respondida, com ressalva importante |
 | 5 | Evolução temporal | Respondida parcialmente |
@@ -1302,7 +1323,7 @@ integralmente e **um** se mostrou impossível com a fonte escolhida.
 | 7 | Margem bruta da revenda | **Não respondível** |
 
 A pergunta 7 foi mantida no objetivo conforme o enunciado. A impossibilidade tem
-causa concreta, pois a ANP descontinuou a publicação do preço de distribuição em
+causa concreta: a ANP descontinuou a publicação do preço de distribuição em
 agosto de 2020. Isso só foi descoberto após a coleta.
 
 A pergunta 5 foi respondida apenas em parte. O *quanto* está medido com precisão
@@ -1311,23 +1332,29 @@ A pergunta 5 foi respondida apenas em parte. O *quanto* está medido com precis�
 câmbio, tributos e preços de distribuidora.
 
 A pergunta 4 mereceu tratamento mais cuidadoso do que o previsto. O resultado
-agregado não confirma a hipótese, e só o controle por região revela a relação. A
-tentação de apresentar apenas a correlação por região, omitindo que o agregado a
-contradiz, foi evitada sendo os dois resultados que estão no documento.
+agregado não confirma a hipótese, e só o controle por região revela a relação.
+Havia a tentação de apresentar apenas a correlação por região, omitindo que o
+agregado a contradiz; optei por deixar os dois resultados no documento.
+
+A pergunta 2 ganhou uma ressalva que não estava prevista. Ao conferir as métricas
+de dispersão percebi que `economia_rs` e `spread_pct` crescem com o número de
+coletas do grupo, o que distorce a comparação entre regiões. O coeficiente de
+variação foi acrescentado à tabela justamente para expor essa divergência no caso
+do Norte.
 
 ## Experiência prévia e o que mudou
 
-O Autor havia trabalhado com este mesmo conjunto de dados na Univates, na disciplina
+Eu já havia trabalhado com este mesmo conjunto de dados na Univates, na disciplina
 de Análise e Modelagem de Dados, primeiro em **Bonita Software** e depois em
 **Power BI**. A familiaridade com a base acelerou a fase de definição do problema
 e das perguntas.
 
 O que mudou foi a natureza do trabalho. Nas experiências anteriores o foco estava
-na modelagem de processo e na visualização onde o dado chegava pronto para consumo.
-Aqui a maior parte do esforço ficou nas etapas anteriores à análise: coleta
-reprodutível, perfilagem de qualidade, normalização, modelagem dimensional e
-validação. É a diferença entre consumir dados e construir a infraestrutura que os
-torna consumíveis.
+na modelagem de processo e na visualização, com o dado já chegando pronto para
+consumo. Aqui a maior parte do esforço ficou nas etapas anteriores à análise:
+coleta reprodutível, perfilagem de qualidade, normalização, modelagem dimensional
+e validação. É a diferença entre consumir dados e construir a infraestrutura que
+os torna consumíveis.
 
 ## Dificuldades encontradas
 
@@ -1355,7 +1382,7 @@ que deveria. Foi identificado apenas porque a perfilagem testou o padrão do cam
 arquivo por arquivo.
 
 **Distinguir defeito de dado de defeito de comparabilidade.** A variação da
-cobertura amostral não é um dado errado cada registro está correto. O problema
+cobertura amostral não é um dado errado: cada registro está correto. O problema
 é comparar médias calculadas sobre conjuntos diferentes de municípios. Reconhecer
 isso como problema de qualidade, e não como característica inocente, foi o
 raciocínio mais difícil do trabalho.
@@ -1367,8 +1394,8 @@ contra uma implementação de referência em pandas. Duas capturaram erros reais
 
 **Arredondamento intermediário.** O índice de preço estava sendo calculado sobre
 médias já arredondadas para dois decimais, resultando em 110,49 em vez de 110,50.
-Arredondar valor intermediário e depois dividir propaga o erro. A boa prática é
-arredondar apenas na apresentação.
+Arredondar um valor intermediário e depois dividir propaga o erro. A boa prática
+é arredondar apenas na apresentação.
 
 **Média ponderada por intensidade de coleta.** O preço médio de cada capital
 estava sendo calculado sobre todas as coletas do período, o que dá mais peso aos
@@ -1378,8 +1405,8 @@ existe justamente para neutralizar variação de intensidade, a média de média
 coerente.
 
 Nenhum dos dois produziria erro visível. Os dois produziriam números sutilmente
-errados que ninguém questionaria. Em engenharia de dados, o erro perigoso não é o que quebra o pipeline é o que
-passa sem ser visto.
+errados que ninguém questionaria. Em engenharia de dados, o erro perigoso não é o
+que quebra o pipeline: é o que passa sem ser visto.
 
 ## Trabalhos futuros
 
@@ -1392,6 +1419,10 @@ tornaria o índice um Laspeyres próprio.
 período diria se o gás de cozinha subiu acima ou abaixo da inflação geral, o que
 transformaria um número técnico em achado com significado social.
 
+**Correção do viés de tamanho de amostra na dispersão.** As métricas de economia
+e spread poderiam ser recalculadas sobre subamostras de tamanho fixo por grupo,
+o que tornaria a comparação entre regiões imune à intensidade da pesquisa.
+
 **Cruzamento com o Programa Gás do Povo.** A Caixa mantém base de revendas
 credenciadas. O join com `dim_revenda` seria direto, já que a chave CNPJ
 normalizado está pronta. Permitiria medir a cobertura do programa por município
@@ -1399,17 +1430,17 @@ e verificar se revendas credenciadas praticam preços diferentes.
 
 **Custo de primeira aquisição.** A base mede o preço de recarga, que é o custo de
 quem já possui o vasilhame. O custo de entrada (casco + gás) é cerca de 1,5 a 2
-vezes maior e representa a barreira de acesso ao GLP para domicílios recém-formados. Não há série pública desse valor, o que sugere uma lacuna de dados
-abertos.
+vezes maior e representa a barreira de acesso ao GLP para domicílios
+recém-formados. Não há série pública desse valor, o que sugere uma lacuna de
+dados abertos.
 
 **Ampliação para outros combustíveis.** A ANP publica gasolina, etanol, diesel e
 GNV no mesmo layout. A `dim_produto` existe justamente como ponto de extensão, e
 o pipeline absorveria os demais produtos sem alteração estrutural.
 
 **Automação da ingestão.** O pipeline é executado manualmente. Um job agendado no
-Databricks, lendo o arquivo de quatro últimas semanas que a ANP publica, tornaria
+Databricks, lendo o arquivo das quatro últimas semanas que a ANP publica, tornaria
 a série incremental.
-
 
 ---
 
@@ -1417,12 +1448,12 @@ a série incremental.
 
 ```
 .
-├── README.md                          
-├── coleta_anp_glp.py                  
-├── referencia_pipeline_glp.py        
-│                                      
-│                                      
-├── notebooks/                         
+├── README.md
+├── coleta_anp_glp.py
+├── referencia_pipeline_glp.py
+├── dados_brutos/
+│   └── glp_*.csv
+├── notebooks/
 │   ├── 00_ingestao_bronze.py
 │   ├── 01_bronze_para_silver.py
 │   ├── 02_gold_dimensoes.py
@@ -1432,8 +1463,8 @@ a série incremental.
 │   ├── 06_analise_perguntas.py
 │   └── 07_exportar_resultados.py
 └── docs/
-    ├── MANIFEST.md                    
-    ├── metadados_anp.pdf              
-    ├── resultados_analise_glp.xlsx   
-    └── img/                           
+    ├── MANIFEST.md
+    ├── metadados_anp.pdf
+    ├── resultados_analise_glp.xlsx
+    └── img/
 ```
