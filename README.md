@@ -5,9 +5,15 @@ sobre a Série Histórica de Preços de GLP P13 da ANP, seguindo a arquitetura
 medalhão (Bronze, Silver, Gold) e modelagem em esquema estrela.
 
 **Autor:** João Victor de Assis Natividade
+
+**Matrícula**: 4052025002212
+
 **Disciplina:** Engenharia de Dados — MVP
+
 **Plataforma:** Databricks Free Edition (Unity Catalog, Delta Lake, Spark serverless)
+
 **Período analisado:** julho de 2024 a agosto de 2026 (26 meses)
+
 **Volume:** 271.945 registros, 5.073 revendas, 421 municípios, 27 UFs
 
 | Etapa | Notebook |
