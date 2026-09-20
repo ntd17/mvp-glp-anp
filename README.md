@@ -230,7 +230,7 @@ ANP:
 
 ## Ingestão Bronze
 
-Notebook: [`notebooks/00_ingestao_bronze.py`](notebooks/00_ingestao_bronze.py)
+Notebook: [`00_ingestao_bronze.py`](notebooks/00_ingestao_bronze.py)
 
 A leitura é feita sobre a pasta inteira do Volume, em uma única operação, com
 schema explícito declarado todas as 16 colunas como `string`. Três decisões:
