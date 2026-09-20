@@ -112,8 +112,8 @@ Lei nº 9.478/1997 (Lei do Petróleo). A pesquisa registra o preço praticado po
 revendedores ao consumidor final, abrangendo gasolina C, etanol hidratado, óleo
 diesel B, GNV e GLP P13. Este trabalho utiliza exclusivamente o recorte de GLP.
 
-**Fonte:** [Série Histórica de Preços de Combustíveis e de GLP — ANP](https://www.gov.br/anp/pt-br/centrais-de-conteudo/dados-abertos/serie-historica-de-precos-de-combustiveis)
-**Órgão responsável:** ANP/SDC — Superintendência de Defesa da Concorrência
+**Fonte:** [Série Histórica de Preços de Combustíveis e de GLP — ANP](https://www.gov.br/anp/pt-br/centrais-de-conteudo/dados-abertos/serie-historica-de-precos-de-combustiveis)\
+**Órgão responsável:** ANP/SDC — Superintendência de Defesa da Concorrência\
 **Periodicidade:** semanal, com publicação agrupada mensal e semestral
 
 ### Arquivos utilizados
@@ -300,17 +300,56 @@ neste trabalho:
    depende de contar meses de cobertura — são calculados uma vez, na dimensão, e
    reutilizados por todas as análises.
 
+```mermaid
+erDiagram
+    dim_tempo      ||--o{ fato_coleta_preco : sk_tempo
+    dim_localidade ||--o{ fato_coleta_preco : sk_local
+    dim_revenda    ||--o{ fato_coleta_preco : sk_revenda
+    dim_bandeira   ||--o{ fato_coleta_preco : sk_bandeira
+    dim_produto    ||--o{ fato_coleta_preco : sk_produto
+
+    fato_coleta_preco {
+        int sk_tempo FK
+        int sk_local FK
+        int sk_revenda FK
+        int sk_bandeira FK
+        int sk_produto FK
+        decimal valor_venda
+        decimal valor_compra
+    }
+    dim_tempo {
+        int sk_tempo PK
+        date data_coleta
+        string ano_mes
+        string ano_semana
+    }
+    dim_localidade {
+        int sk_local PK
+        string municipio
+        string uf_sigla
+        string regiao_nome
+        boolean flag_capital
+        boolean flag_painel_capitais
+    }
+    dim_revenda {
+        int sk_revenda PK
+        string cnpj_revenda
+        string revenda_nome
+    }
+    dim_bandeira {
+        int sk_bandeira PK
+        string bandeira
+        boolean flag_bandeira_branca
+    }
+    dim_produto {
+        int sk_produto PK
+        string produto
+        string unidade_medida
+    }
 ```
-                    dim_tempo
-                        │
-   dim_bandeira ───┐    │    ┌─── dim_localidade
-                   │    │    │
-                   └─ fato_coleta_preco ─┐
-                   ┌────┘         │      │
-        dim_produto              │      └─── dim_revenda
-                                 │
-                        (valor_venda, valor_compra)
-```
+
+O diagrama mostra as chaves e os atributos principais; a lista completa de
+colunas de cada tabela está no catálogo abaixo.
 
 ### Grão e aditividade
 
@@ -348,9 +387,12 @@ não são informação ausente: são dias em que a pesquisa não ocorre.
 ## Catálogo de Dados
 
 O catálogo está implementado no **Unity Catalog**, via `COMMENT ON TABLE` e
-`ALTER TABLE ... ALTER COLUMN ... COMMENT`, e transcrito integralmente abaixo. A
-documentação vive no sistema, não apenas neste documento: quem abrir a tabela no
-Catalog Explorer no futuro verá a mesma descrição.
+`ALTER TABLE ... ALTER COLUMN ... COMMENT`. Todas as tabelas têm comentário de
+tabela, com grão e linhagem. Os comentários de coluna cobrem todas as colunas da
+Bronze e do fato (exceto uma de controle) e, nas demais tabelas, as colunas
+derivadas ou com regra de negócio, que são as que alguém poderia interpretar
+errado. A transcrição abaixo é o catálogo completo: reproduz o que está no
+sistema e acrescenta tipo e domínio de todas as colunas.
 
 ### Evidência do sistema de catálogo
 
@@ -576,7 +618,7 @@ fato restrita a `flag_painel_capitais`. **650 linhas** (25 capitais × 26 meses)
 | `municipio` | string | Capital. 25 valores |
 | `uf_sigla` | string | UF da capital |
 | `regiao_nome` | string | Região da capital |
-| `preco_medio` | decimal | Preço médio da capital no mês. 93,60 a 138,23 no período |
+| `preco_medio` | decimal | Preço médio da capital no mês. Na média dos 26 meses vai de 93,60 (Recife) a 138,23 (Boa Vista); meses individuais ultrapassam essa faixa |
 | `preco_mediano` | decimal | Mediana do mês |
 | `preco_min` | decimal | Menor preço do mês na capital |
 | `preco_max` | decimal | Maior preço do mês na capital |
@@ -637,7 +679,18 @@ Mede a dispersão entre revendas da mesma cidade na mesma semana.
 
 Tabela de referência com constantes públicas. **Obs:** são critérios de
 elegibilidade de programas sociais, não renda observada da população. Todos
-os valores estiveram vigentes durante todo o período analisado. **4 colunas.**
+os valores estiveram vigentes durante todo o período analisado.
+**Linhagem:** constantes declaradas no notebook `05_gold_agregados`, sem fonte em
+arquivo. **3 linhas, 4 colunas.**
+
+| Coluna | Tipo | Descrição e domínio |
+|---|---|---|
+| `referencia` | string | Identificador da linha. Domínio: `linha_extrema_pobreza`, `linha_pobreza`, `piso_bolsa_familia` |
+| `valor_mensal` | double | Valor em R$ por mês. Domínio: 109,00, 218,00, 600,00 |
+| `unidade` | string | A quem o valor se refere. Domínio: `pessoa`, `familia` |
+| `descricao` | string | Texto explicativo da origem do critério |
+
+Conteúdo integral:
 
 | `referencia` | `valor_mensal` | `unidade` |
 |---|---:|---|
@@ -651,7 +704,7 @@ os valores estiveram vigentes durante todo o período analisado. **4 colunas.**
 
 ## Organização em notebooks
 
-O pipeline foi **ramificado em sete notebooks**, em vez de concentrado em um só.
+O pipeline foi **ramificado em oito notebooks**, em vez de concentrado em um só.
 O critério de divisão foi a responsabilidade: cada notebook tem uma entrada, uma
 saída e um conjunto próprio de validações.
 
@@ -672,8 +725,9 @@ Cada notebook pode ser reexecutado isoladamente, já que todos são idempotentes
 (`mode("overwrite")`). E a leitura do repositório fica compreensível para quem
 não acompanhou a construção.
 
-O `04_qualidade_dados` é o único que não escreve nada. Ele lê a camada
-Bronze deliberadamente, porque qualidade se mede no estado bruto. Perfilar a
+Dois notebooks não escrevem tabela alguma: o `06_analise_perguntas`, que só
+consulta a Gold, e o `04_qualidade_dados`. Este último lê a camada Bronze
+deliberadamente, porque qualidade se mede no estado bruto. Perfilar a
 Silver seria medir o próprio conserto e concluir que não havia problema.
 
 ## Fluxo de transformação
@@ -737,14 +791,14 @@ neutralizar.
 
 ## Validação automatizada
 
-Cada notebook termina com um bloco de checagens que compara os resultados contra
+Os notebooks de 00 a 06 terminam com um bloco de checagens que compara os resultados contra
 uma **implementação de referência** desenvolvida em pandas e executada localmente
 ([`referencia_pipeline_glp.py`](referencia_pipeline_glp.py)). Divergência lança
 exceção e interrompe a execução.
 
 | Notebook | Checagens |
 |---|---:|
-| [`00_ingestao_bronze`](notebooks/00_ingestao_bronze.py)| 7 (total + 6 arquivos) |
+| [`00_ingestao_bronze`](notebooks/00_ingestao_bronze.py) | 7 (total + 6 arquivos) |
 | [`01_bronze_para_silver`](notebooks/01_bronze_para_silver.py) | 7 |
 | [`02_gold_dimensoes`](notebooks/02_gold_dimensoes.py) | 11 (6 contagens + 5 testes de unicidade) |
 | [`03_gold_fato`](notebooks/03_gold_fato.py) | 12 (contagem, nulos, integridade referencial, soma de controle) |
@@ -1070,10 +1124,15 @@ dispersão aparente do Norte é intensidade de pesquisa, não preço. Centro-Oes
 no topo e Nordeste na base, por outro lado, são confirmados pelas duas métricas.
 
 **Discussão.** Comparando com a pergunta 1, o resultado é contraintuitivo:
-pesquisar preço dentro do próprio bairro rende quase um quinto do que separa a
+pesquisar preço dentro da própria cidade rende quase um quinto do que separa a
 capital mais cara da mais barata do país (R$ 7,86 contra R$ 44,63). A diferença
 é que a primeira parcela está ao alcance de uma busca na internet e a segunda
 não está ao alcance de ninguém.
+
+Há um limite para o "acionável": a análise é por município, não por bairro. Em
+cidades grandes como São Paulo, parte do spread medido é distância — a revenda
+mais barata pode estar do outro lado da cidade —, de modo que a economia
+efetivamente ao alcance de uma família é menor que a medida.
 
 ## Pergunta 3 — Bandeira branca é mais barata?
 
@@ -1309,8 +1368,9 @@ pode dizer sobre o interior pequeno, onde a pesquisa da ANP não chega.
 
 ## Atingimento dos objetivos
 
-Dos sete objetivos traçados antes do início do trabalho, seis foram atingidos e
-**um** se mostrou impossível com a fonte escolhida.
+Das sete perguntas traçadas antes do início do trabalho, cinco foram respondidas
+(duas delas com ressalva metodológica), uma foi respondida apenas em parte e
+**uma** se mostrou impossível com a fonte escolhida.
 
 | # | Pergunta | Situação |
 |---|---|---|
